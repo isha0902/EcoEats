@@ -1,0 +1,4 @@
+id,title,category,price,quantity,pickup_start,pickup_end,location,seller_name,seller_contact,status,created_at
+9c7d1a5b4e8b4f7a8b8d4c1e5f2e9d10,Mixed bakery box,Bakery,4.99,8,2026-04-13T18:00,2026-04-13T20:00,Downtown,Green Leaf Café,greenleaf@example.com,available,2026-04-13T16:05:00+00:00
+1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b,Surplus veggie bowls,Prepared Meals,6.50,5,2026-04-13T17:30,2026-04-13T19:00,Riverside,Bowl & Co,+1-555-0101,reserved,2026-04-13T15:42:00+00:00
+aa11bb22cc33dd44ee55ff6677889900,Seasonal fruit bag,Produce,3.25,12,2026-04-13T16:30,2026-04-13T18:00,Midtown,Fresh Mart,contact@freshmart.com,available,2026-04-13T14:20:00+00:00

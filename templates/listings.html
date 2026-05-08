@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="pageHead">
+    <div>
+      <h1 class="pageHead__title">Listings</h1>
+      <p class="pageHead__subtitle">Browse surplus food and reserve a pickup.</p>
+    </div>
+    <div class="pageHead__actions">
+      {% if current_user.is_authenticated %}
+        {% if current_user.role == "seller" %}
+          <a class="btn btn--primary" href="{{ url_for('new_listing') }}">Add listing</a>
+        {% else %}
+          <a class="btn btn--primary" href="{{ url_for('my_reservations') }}">My reservations</a>
+        {% endif %}
+      {% else %}
+        <a class="btn btn--primary" href="{{ url_for('login') }}">Login to reserve</a>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="card filters">
+    <form class="filters__form" method="get" action="{{ url_for('listings') }}">
+      <div class="field">
+        <label class="label" for="q">Search</label>
+        <input class="input" id="q" name="q" placeholder="pizza, bakery, downtown…" value="{{ q }}" />
+      </div>
+      <div class="field">
+        <label class="label" for="category">Category</label>
+        <select class="select" id="category" name="category">
+          <option value="">All</option>
+          {% for c in categories %}
+            <option value="{{ c|lower }}" {% if category == c|lower %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="label" for="status">Status</label>
+        <select class="select" id="status" name="status">
+          <option value="available" {% if status == "available" %}selected{% endif %}>Available</option>
+          <option value="reserved" {% if status == "reserved" %}selected{% endif %}>Reserved</option>
+          <option value="sold" {% if status == "sold" %}selected{% endif %}>Sold</option>
+        </select>
+      </div>
+      <div class="filters__buttons">
+        <button class="btn btn--primary" type="submit">Apply</button>
+        <a class="btn btn--ghost" href="{{ url_for('listings') }}">Reset</a>
+      </div>
+    </form>
+  </section>
+
+  {% if listings %}
+    <section class="grid grid--cards">
+      {% for l in listings %}
+        <article class="card listingCard">
+          <div class="listingCard__top">
+            <div>
+              <div class="listingCard__title">{{ l.title }}</div>
+              <div class="listingCard__meta">
+                <span class="tag">{{ l.category }}</span>
+                <span class="dot">•</span>
+                <span class="muted">{{ l.location }}</span>
+              </div>
+            </div>
+            <div class="listingCard__price">
+              <div class="price">${{ l.price }}</div>
+              <div class="muted">qty {{ l.quantity }}</div>
+            </div>
+          </div>
+
+          <div class="listingCard__details">
+            <div class="detail">
+              <div class="detail__label">Pickup window</div>
+              <div class="detail__value">{{ l.pickup_start }} → {{ l.pickup_end }}</div>
+            </div>
+            {% if l.seller_name %}
+              <div class="detail">
+                <div class="detail__label">Seller</div>
+                <div class="detail__value">{{ l.seller_name }}</div>
+              </div>
+            {% endif %}
+            {% if l.seller_contact %}
+              <div class="detail">
+                <div class="detail__label">Contact</div>
+                <div class="detail__value">{{ l.seller_contact }}</div>
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="listingCard__actions">
+            {% if l.status == "available" %}
+              {% if current_user.is_authenticated %}
+                <form method="post" action="{{ url_for('reserve_listing', listing_id=l.id) }}">
+                  <button class="btn btn--primary" type="submit">Reserve</button>
+                </form>
+              {% else %}
+                <a class="btn btn--primary" href="{{ url_for('login') }}">Login to reserve</a>
+              {% endif %}
+              {% if current_user.is_authenticated and current_user.role == "seller" %}
+                <form method="post" action="{{ url_for('mark_sold', listing_id=l.id) }}">
+                  <button class="btn btn--ghost" type="submit">Mark sold</button>
+                </form>
+              {% endif %}
+            {% elif l.status == "reserved" %}
+              {% if current_user.is_authenticated and (l.id in (my_reserved_ids or [])) %}
+                <form method="post" action="{{ url_for('unreserve_listing', listing_id=l.id) }}">
+                  <button class="btn btn--ghost" type="submit">Cancel reservation</button>
+                </form>
+              {% else %}
+                <div class="pill pill--muted">Reserved</div>
+              {% endif %}
+              {% if current_user.is_authenticated and current_user.role == "seller" %}
+                <form method="post" action="{{ url_for('mark_sold', listing_id=l.id) }}">
+                  <button class="btn btn--primary" type="submit">Complete sale</button>
+                </form>
+              {% endif %}
+            {% else %}
+              <div class="pill pill--muted">Sold</div>
+            {% endif %}
+          </div>
+        </article>
+      {% endfor %}
+    </section>
+  {% else %}
+    <section class="card empty">
+      <h2 class="empty__title">No matches</h2>
+      <p class="empty__subtitle">Try changing filters, or post a new listing.</p>
+      <a class="btn btn--primary" href="{{ url_for('new_listing') }}">Add listing</a>
+    </section>
+  {% endif %}
+{% endblock %}

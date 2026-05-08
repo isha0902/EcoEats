@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="pageHead">
+    <div>
+      <h1 class="pageHead__title">Add a listing</h1>
+      <p class="pageHead__subtitle">Post surplus food for nearby people to reserve.</p>
+    </div>
+    <div class="pageHead__actions">
+      <a class="btn btn--ghost" href="{{ url_for('listings') }}">Back to browse</a>
+    </div>
+  </section>
+
+  <section class="card formCard">
+    <form method="post" action="{{ url_for('create_listing_route') }}" class="form">
+      <div class="grid grid--2">
+        <div class="field">
+          <label class="label" for="title">Title</label>
+          <input class="input" id="title" name="title" placeholder="Mixed bakery box" value="{{ form.get('title','') }}" required />
+        </div>
+
+        <div class="field">
+          <label class="label" for="category">Category</label>
+          <select class="select" id="category" name="category" required>
+            {% set cat = form.get('category','') %}
+            <option value="" {% if not cat %}selected{% endif %} disabled>Select…</option>
+            {% for c in ["Bakery","Prepared Meals","Produce","Dairy","Snacks","Other"] %}
+              <option value="{{ c }}" {% if cat == c %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid--2">
+        <div class="field">
+          <label class="label" for="price">Price (USD)</label>
+          <input class="input" id="price" name="price" inputmode="decimal" placeholder="4.99" value="{{ form.get('price','') }}" required />
+        </div>
+        <div class="field">
+          <label class="label" for="quantity">Quantity</label>
+          <input class="input" id="quantity" name="quantity" inputmode="numeric" placeholder="10" value="{{ form.get('quantity','') }}" required />
+        </div>
+      </div>
+
+      <div class="grid grid--2">
+        <div class="field">
+          <label class="label" for="pickup_start">Pickup start</label>
+          <input class="input" id="pickup_start" name="pickup_start" type="datetime-local"
+                 value="{{ form.get('pickup_start','') }}" required />
+          <div class="hint">Tip: choose a window for today, e.g. {{ now_local }}.</div>
+        </div>
+        <div class="field">
+          <label class="label" for="pickup_end">Pickup end</label>
+          <input class="input" id="pickup_end" name="pickup_end" type="datetime-local"
+                 value="{{ form.get('pickup_end','') }}" required />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label" for="location">Location</label>
+        <input class="input" id="location" name="location" placeholder="Downtown, 5th Ave" value="{{ form.get('location','') }}" required />
+      </div>
+
+      <div class="grid grid--2">
+        <div class="field">
+          <label class="label" for="seller_name">Seller name (optional)</label>
+          <input class="input" id="seller_name" name="seller_name" placeholder="Green Leaf Café" value="{{ form.get('seller_name','') }}" />
+        </div>
+        <div class="field">
+          <label class="label" for="seller_contact">Contact (optional)</label>
+          <input class="input" id="seller_contact" name="seller_contact" placeholder="phone or email" value="{{ form.get('seller_contact','') }}" />
+        </div>
+      </div>
+
+      <div class="form__actions">
+        <button class="btn btn--primary" type="submit">Create listing</button>
+        <a class="btn btn--ghost" href="{{ url_for('listings') }}">Cancel</a>
+      </div>
+    </form>
+  </section>
+{% endblock %}

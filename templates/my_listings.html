@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="pageHead">
+    <div>
+      <h1 class="pageHead__title">My listings</h1>
+      <p class="pageHead__subtitle">Manage the listings you’ve posted.</p>
+    </div>
+    <div class="pageHead__actions">
+      <a class="btn btn--primary" href="{{ url_for('new_listing') }}">Add listing</a>
+    </div>
+  </section>
+
+  {% if listings %}
+    <section class="grid grid--cards">
+      {% for l in listings %}
+        <article class="card listingCard">
+          <div class="listingCard__top">
+            <div>
+              <div class="listingCard__title">{{ l.title }}</div>
+              <div class="listingCard__meta">
+                <span class="tag">{{ l.category }}</span>
+                <span class="dot">•</span>
+                <span class="muted">{{ l.location }}</span>
+              </div>
+            </div>
+            <div class="listingCard__price">
+              <div class="price">${{ l.price }}</div>
+              <div class="muted">qty {{ l.quantity }}</div>
+            </div>
+          </div>
+
+          <div class="listingCard__details">
+            <div class="detail">
+              <div class="detail__label">Pickup window</div>
+              <div class="detail__value">{{ l.pickup_start }} → {{ l.pickup_end }}</div>
+            </div>
+            <div class="detail">
+              <div class="detail__label">Status</div>
+              <div class="detail__value">
+                <span class="pill {% if l.status != 'available' %}pill--muted{% endif %}">{{ l.status }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="listingCard__actions">
+            {% if l.status != "sold" %}
+              <form method="post" action="{{ url_for('mark_sold', listing_id=l.id) }}">
+                <button class="btn btn--primary" type="submit">Mark sold</button>
+              </form>
+            {% else %}
+              <div class="pill pill--muted">Sold</div>
+            {% endif %}
+            <a class="btn btn--ghost" href="{{ url_for('listings', q=l.title) }}">View in browse</a>
+          </div>
+        </article>
+      {% endfor %}
+    </section>
+  {% else %}
+    <section class="card empty">
+      <h2 class="empty__title">No listings yet</h2>
+      <p class="empty__subtitle">Add your first listing to start selling surplus food.</p>
+      <a class="btn btn--primary" href="{{ url_for('new_listing') }}">Add listing</a>
+    </section>
+  {% endif %}
+{% endblock %}
+

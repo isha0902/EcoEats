@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="landingHero">
+    <div class="landingHero__left">
+      <div class="landingHero__bgText" aria-hidden="true">EcoEats</div>
+      <div class="landingHero__kicker">Food • Pickups • Discounts</div>
+      <h1 class="landingHero__title">
+        It’s Not Just Food,<br />
+        <span class="landingHero__titleAccent">It’s Experience.</span>
+      </h1>
+      <p class="landingHero__subtitle">
+        Discover surplus meals nearby. Reserve a pickup window and save great food from going to waste.
+      </p>
+
+      <form class="searchBar" method="get" action="{{ url_for('listings') }}">
+        <label class="srOnly" for="homeSearch">Search listings</label>
+        <input
+          id="homeSearch"
+          class="searchBar__input"
+          name="q"
+          placeholder="Search you like foods"
+          autocomplete="off"
+        />
+        <button class="searchBar__button" type="submit">Search</button>
+      </form>
+
+      <div class="landingHero__meta">
+        <div class="locationPill">
+          <span class="locationPill__icon" aria-hidden="true">⌁</span>
+          <span class="locationPill__text">Your area</span>
+        </div>
+        <div class="miniStats" aria-label="Listing counts">
+          <div class="miniStat">
+            <div class="miniStat__num">{{ stats.available }}</div>
+            <div class="miniStat__label">available</div>
+          </div>
+          <div class="miniStat">
+            <div class="miniStat__num">{{ stats.reserved }}</div>
+            <div class="miniStat__label">reserved</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="landingHero__ctaRow">
+        <a class="btn btn--primary" href="{{ url_for('listings') }}">Browse available</a>
+        <a class="btn btn--ghost" href="{{ url_for('new_listing') }}">Post a listing</a>
+      </div>
+    </div>
+
+    <div class="landingHero__right">
+      <div class="heroArt" role="img" aria-label="Featured dish illustration">
+        <div class="heroArt__dots" aria-hidden="true"></div>
+        <div class="heroArt__plate" aria-hidden="true"></div>
+        <div class="heroArt__arrows" aria-hidden="true">
+          <span class="heroArt__arrow">‹</span>
+          <span class="heroArt__arrow">›</span>
+        </div>
+      </div>
+
+      <div class="card card--glow landingHero__pickupCard">
+        <div class="pill">Today’s pickups</div>
+        {% if latest %}
+          <div class="grid grid--stack">
+            {% for l in latest %}
+              <div class="listingRow">
+                <div class="listingRow__main">
+                  <div class="listingRow__title">{{ l.title }}</div>
+                  <div class="listingRow__meta">
+                    <span class="tag">{{ l.category }}</span>
+                    <span class="dot">•</span>
+                    <span>{{ l.location }}</span>
+                  </div>
+                </div>
+                <div class="listingRow__right">
+                  <div class="price">${{ l.price }}</div>
+                  <a class="link" href="{{ url_for('listings', q=l.title) }}">view</a>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="muted">No listings yet. Post the first one.</p>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section__head">
+      <h2 class="section__title">How it works</h2>
+      <p class="section__subtitle">A simple MVP flow you can extend with logins + payments.</p>
+    </div>
+    <div class="grid grid--3">
+      <div class="card">
+        <div class="card__title">1) Post surplus</div>
+        <div class="card__body">Add items, price, pickup window, and location.</div>
+      </div>
+      <div class="card">
+        <div class="card__title">2) Browse nearby</div>
+        <div class="card__body">Filter by category and search by location or seller.</div>
+      </div>
+      <div class="card">
+        <div class="card__title">3) Reserve pickup</div>
+        <div class="card__body">One click to reserve. Mark sold when completed.</div>
+      </div>
+    </div>
+  </section>
+{% endblock %}

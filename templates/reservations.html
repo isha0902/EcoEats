@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="pageHead">
+    <div>
+      <h1 class="pageHead__title">My reservations</h1>
+      <p class="pageHead__subtitle">Your active and past reservations.</p>
+    </div>
+  </section>
+
+  {% if reservations %}
+    <section class="grid grid--stack">
+      {% for r in reservations %}
+        <article class="card listingCard">
+          <div class="listingCard__top">
+            <div>
+              <div class="listingCard__title">{{ r.listing.title }}</div>
+              <div class="listingCard__meta">
+                <span class="tag">{{ r.listing.category }}</span>
+                <span class="dot">•</span>
+                <span class="muted">{{ r.listing.location }}</span>
+              </div>
+            </div>
+            <div class="listingCard__price">
+              <div class="price">${{ r.listing.price }}</div>
+              <div class="muted">qty {{ r.listing.quantity }}</div>
+            </div>
+          </div>
+
+          <div class="listingCard__details">
+            <div class="detail">
+              <div class="detail__label">Pickup window</div>
+              <div class="detail__value">{{ r.listing.pickup_start }} → {{ r.listing.pickup_end }}</div>
+            </div>
+            <div class="detail">
+              <div class="detail__label">Reservation</div>
+              <div class="detail__value">
+                <span class="pill {% if r.status != 'active' %}pill--muted{% endif %}">{{ r.status }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="listingCard__actions">
+            <a class="btn btn--ghost" href="{{ url_for('listings', q=r.listing.title) }}">View listing</a>
+            {% if r.status == "active" %}
+              <form method="post" action="{{ url_for('unreserve_listing', listing_id=r.listing.id) }}">
+                <button class="btn btn--primary" type="submit">Cancel</button>
+              </form>
+            {% endif %}
+          </div>
+        </article>
+      {% endfor %}
+    </section>
+  {% else %}
+    <section class="card empty">
+      <h2 class="empty__title">No reservations yet</h2>
+      <p class="empty__subtitle">Browse listings and reserve a pickup.</p>
+      <a class="btn btn--primary" href="{{ url_for('listings') }}">Browse</a>
+    </section>
+  {% endif %}
+{% endblock %}
+
