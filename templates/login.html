@@ -10,6 +10,7 @@
 
   <section class="card authCard">
     <form method="post" action="{{ url_for('login_post') }}" class="form">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
       <div class="field">
         <label class="label" for="email">Email</label>
         <input class="input" id="email" name="email" type="email" autocomplete="email" required />

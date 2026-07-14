@@ -13,6 +13,7 @@
 
   <section class="card formCard">
     <form method="post" action="{{ url_for('create_listing_route') }}" class="form">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
       <div class="grid grid--2">
         <div class="field">
           <label class="label" for="title">Title</label>

@@ -26,6 +26,7 @@
             <a class="nav__link" href="{{ url_for('my_reservations') }}">My reservations</a>
             <span class="nav__pill">Hi, {{ current_user.name }}</span>
             <form class="nav__form" method="post" action="{{ url_for('logout') }}">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
               <button class="nav__link" type="submit">Logout</button>
             </form>
           {% else %}

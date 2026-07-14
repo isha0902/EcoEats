@@ -68,6 +68,10 @@
                   <div class="listingRow__title">{{ l.title }}</div>
                   <div class="listingRow__meta">
                     <span class="tag">{{ l.category }}</span>
+                      {% if current_user.is_authenticated and current_user.role == "seller" and l.seller_id is none %}
+                        <span class="dot">•</span>
+                        <span class="tag tag--unassigned">Unassigned</span>
+                      {% endif %}
                     <span class="dot">•</span>
                     <span>{{ l.location }}</span>
                   </div>

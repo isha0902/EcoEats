@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import csv
+import os
+import secrets
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from flask import Flask, flash, redirect, render_template, request, url_for
+from flask import Flask, abort, flash, redirect, render_template, request, session, url_for
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -15,18 +17,53 @@ from sqlalchemy import text
 APP_ROOT = Path(__file__).parent.resolve()
 DATA_PATH = APP_ROOT / "data" / "food.csv"
 DB_PATH = APP_ROOT / "data" / "ecoeats.sqlite3"
+CSRF_SESSION_KEY = "_csrf_token"
+
+
+def get_database_uri() -> str:
+    # Prefer platform-provided DATABASE_URL in production, with sqlite fallback for local dev.
+    database_url = os.getenv("DATABASE_URL", "").strip()
+    if not database_url:
+        return f"sqlite:///{DB_PATH}"
+    if database_url.startswith("postgres://"):
+        return database_url.replace("postgres://", "postgresql://", 1)
+    return database_url
+
+
+def generate_csrf_token() -> str:
+    token = session.get(CSRF_SESSION_KEY)
+    if not token:
+        token = secrets.token_urlsafe(32)
+        session[CSRF_SESSION_KEY] = token
+    return token
+
+
+def is_valid_csrf_token(token: str) -> bool:
+    expected = session.get(CSRF_SESSION_KEY)
+    return bool(token and expected and secrets.compare_digest(token, expected))
 
 
 def create_app() -> Flask:
     app = Flask(__name__)
-    app.secret_key = "dev-secret-key"  # replace for production
-    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB_PATH}"
+    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret-key")
+    app.config["SQLALCHEMY_DATABASE_URI"] = get_database_uri()
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     db.init_app(app)
     login_manager = LoginManager()
     login_manager.login_view = "login"
     login_manager.init_app(app)
+
+    @app.context_processor
+    def inject_csrf_token():
+        return {"csrf_token": generate_csrf_token}
+
+    @app.before_request
+    def csrf_protect():
+        if request.method == "POST":
+            token = request.form.get("_csrf_token", "")
+            if not is_valid_csrf_token(token):
+                abort(400, description="Invalid CSRF token")
 
     @login_manager.user_loader
     def load_user(user_id: str):
@@ -183,6 +220,32 @@ def create_app() -> Flask:
         flash("Reservation cancelled.", "success")
         return redirect_back()
 
+    @app.post("/listings/<listing_id>/claim")
+    @login_required
+    def claim_listing(listing_id: str):
+        if current_user.role != "seller":
+            flash("Only sellers can claim listings.", "error")
+            return redirect_back()
+
+        listing = Listing.query.get(listing_id)
+        if not listing:
+            flash("Listing not found.", "error")
+            return redirect_back()
+
+        current_user_id = int(current_user.get_id())
+        if listing.seller_id == current_user_id:
+            flash("This listing is already assigned to you.", "success")
+            return redirect_back()
+
+        if listing.seller_id is not None and listing.seller_id != current_user_id:
+            flash("This listing is already assigned to another seller.", "error")
+            return redirect_back()
+
+        listing.seller_id = current_user_id
+        db.session.commit()
+        flash("Listing claimed. You can now manage it.", "success")
+        return redirect_back()
+
     @app.post("/listings/<listing_id>/sold")
     @login_required
     def mark_sold(listing_id: str):
@@ -193,7 +256,8 @@ def create_app() -> Flask:
         if not listing:
             flash("Listing not found.", "error")
             return redirect_back()
-        if listing.seller_id and listing.seller_id != int(current_user.get_id()):
+        # Strict ownership check: listings with no owner cannot be sold from UI actions.
+        if listing.seller_id != int(current_user.get_id()):
             flash("You can only mark your own listings as sold.", "error")
             return redirect_back()
 
@@ -328,14 +392,6 @@ def seed_db_from_csv_if_empty() -> None:
     if Listing.query.first() is not None:
         return
 
-
-def ensure_schema_upgrades() -> None:
-    # Lightweight migrations for SQLite (no Alembic in this starter).
-    insp = db.inspect(db.engine)
-    cols = {c["name"] for c in insp.get_columns("listings")}
-    if "seller_id" not in cols:
-        db.session.execute(text("ALTER TABLE listings ADD COLUMN seller_id INTEGER"))
-        db.session.commit()
     if not DATA_PATH.exists():
         return
 
@@ -388,6 +444,15 @@ def ensure_schema_upgrades() -> None:
         db.session.rollback()
         # If import fails, app still runs; user can add listings manually.
         return
+
+
+def ensure_schema_upgrades() -> None:
+    # Lightweight migrations for SQLite (no Alembic in this starter).
+    insp = db.inspect(db.engine)
+    cols = {c["name"] for c in insp.get_columns("listings")}
+    if "seller_id" not in cols:
+        db.session.execute(text("ALTER TABLE listings ADD COLUMN seller_id INTEGER"))
+        db.session.commit()
 
 
 def validate_listing_form(form: dict[str, str]) -> list[str]:

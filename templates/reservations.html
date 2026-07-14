@@ -44,6 +44,7 @@
             <a class="btn btn--ghost" href="{{ url_for('listings', q=r.listing.title) }}">View listing</a>
             {% if r.status == "active" %}
               <form method="post" action="{{ url_for('unreserve_listing', listing_id=r.listing.id) }}">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
                 <button class="btn btn--primary" type="submit">Cancel</button>
               </form>
             {% endif %}

@@ -46,6 +46,7 @@
           <div class="listingCard__actions">
             {% if l.status != "sold" %}
               <form method="post" action="{{ url_for('mark_sold', listing_id=l.id) }}">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
                 <button class="btn btn--primary" type="submit">Mark sold</button>
               </form>
             {% else %}

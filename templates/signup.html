@@ -10,6 +10,7 @@
 
   <section class="card authCard">
     <form method="post" action="{{ url_for('signup_post') }}" class="form">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
       <div class="grid grid--2">
         <div class="field">
           <label class="label" for="name">Name</label>

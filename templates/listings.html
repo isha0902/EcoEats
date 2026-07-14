@@ -58,6 +58,10 @@
               <div class="listingCard__title">{{ l.title }}</div>
               <div class="listingCard__meta">
                 <span class="tag">{{ l.category }}</span>
+                {% if current_user.is_authenticated and current_user.role == "seller" and l.seller_id is none %}
+                  <span class="dot">•</span>
+                  <span class="tag tag--unassigned">Unassigned</span>
+                {% endif %}
                 <span class="dot">•</span>
                 <span class="muted">{{ l.location }}</span>
               </div>
@@ -88,32 +92,48 @@
           </div>
 
           <div class="listingCard__actions">
-            {% if l.status == "available" %}
+              {% if l.status == "available" %}
               {% if current_user.is_authenticated %}
                 <form method="post" action="{{ url_for('reserve_listing', listing_id=l.id) }}">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
                   <button class="btn btn--primary" type="submit">Reserve</button>
                 </form>
               {% else %}
                 <a class="btn btn--primary" href="{{ url_for('login') }}">Login to reserve</a>
               {% endif %}
-              {% if current_user.is_authenticated and current_user.role == "seller" %}
+                {% if current_user.is_authenticated and current_user.role == "seller" and l.seller_id == (current_user.get_id()|int) %}
                 <form method="post" action="{{ url_for('mark_sold', listing_id=l.id) }}">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
                   <button class="btn btn--ghost" type="submit">Mark sold</button>
                 </form>
               {% endif %}
+                {% if current_user.is_authenticated and current_user.role == "seller" and l.seller_id is none %}
+                  <form method="post" action="{{ url_for('claim_listing', listing_id=l.id) }}">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
+                    <button class="btn btn--ghost" type="submit">Claim listing</button>
+                  </form>
+                {% endif %}
             {% elif l.status == "reserved" %}
               {% if current_user.is_authenticated and (l.id in (my_reserved_ids or [])) %}
                 <form method="post" action="{{ url_for('unreserve_listing', listing_id=l.id) }}">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
                   <button class="btn btn--ghost" type="submit">Cancel reservation</button>
                 </form>
               {% else %}
                 <div class="pill pill--muted">Reserved</div>
               {% endif %}
-              {% if current_user.is_authenticated and current_user.role == "seller" %}
+                {% if current_user.is_authenticated and current_user.role == "seller" and l.seller_id == (current_user.get_id()|int) %}
                 <form method="post" action="{{ url_for('mark_sold', listing_id=l.id) }}">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
                   <button class="btn btn--primary" type="submit">Complete sale</button>
                 </form>
               {% endif %}
+                {% if current_user.is_authenticated and current_user.role == "seller" and l.seller_id is none %}
+                  <form method="post" action="{{ url_for('claim_listing', listing_id=l.id) }}">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
+                    <button class="btn btn--ghost" type="submit">Claim listing</button>
+                  </form>
+                {% endif %}
             {% else %}
               <div class="pill pill--muted">Sold</div>
             {% endif %}
