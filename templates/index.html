@@ -72,6 +72,11 @@
                         <span class="dot">•</span>
                         <span class="tag tag--unassigned">Unassigned</span>
                       {% endif %}
+                      {% set active_count = active_reservation_counts.get(l.id, 0) %}
+                      {% if l.quantity > 1 or active_count %}
+                        <span class="dot">•</span>
+                        <span class="muted">{{ active_count }}/{{ l.quantity }} reserved</span>
+                      {% endif %}
                     <span class="dot">•</span>
                     <span>{{ l.location }}</span>
                   </div>

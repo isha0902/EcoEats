@@ -489,3 +489,13 @@ a{color:inherit; text-decoration:none}
 .form__actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:4px}
 
 .authCard{max-width:560px}
+
+/* Pagination styles */
+.pagination{margin-top:18px}
+.pagination__inner{display:flex; justify-content:center}
+.pagination__pages{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+.pagination__ellipsis{color:var(--muted); padding:8px 6px}
+.pagination .btn{padding:8px 10px; border-radius:10px; font-size:13px}
+.pagination .btn[aria-disabled="true"]{opacity:.5; pointer-events:none}
+.pagination .btn--primary{background: linear-gradient(135deg, var(--accent), var(--accent2)); color:#07110d}
+

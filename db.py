@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
@@ -16,7 +16,7 @@ class User(UserMixin, db.Model):
     name = db.Column(db.String(120), nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(30), nullable=False, default="buyer")  # buyer | seller
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), index=True)
 
 
 class Listing(db.Model):
@@ -39,7 +39,7 @@ class Listing(db.Model):
     seller_contact = db.Column(db.String(140), nullable=False, default="")
 
     status = db.Column(db.String(16), nullable=False, default="available", index=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), index=True)
 
     seller = db.relationship("User", lazy="joined", foreign_keys=[seller_id])
 
@@ -52,7 +52,7 @@ class Reservation(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
 
     status = db.Column(db.String(16), nullable=False, default="active", index=True)  # active | cancelled | completed
-    reserved_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
+    reserved_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), index=True)
 
     listing = db.relationship("Listing", lazy="joined")
     user = db.relationship("User", lazy="joined")

@@ -12,7 +12,7 @@ from flask_login import LoginManager, current_user, login_required, login_user, 
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from db import Listing, Reservation, User, db
-from sqlalchemy import text
+from sqlalchemy import text, select
 
 APP_ROOT = Path(__file__).parent.resolve()
 DATA_PATH = APP_ROOT / "data" / "food.csv"
@@ -65,21 +65,28 @@ def create_app() -> Flask:
             if not is_valid_csrf_token(token):
                 abort(400, description="Invalid CSRF token")
 
+    @app.errorhandler(400)
+    def bad_request(error):
+        description = getattr(error, "description", "Bad request")
+        return render_template("error.html", title="Bad request", message=description), 400
+
     @login_manager.user_loader
     def load_user(user_id: str):
         try:
-            return User.query.get(int(user_id))
+            return db.session.get(User, int(user_id))
         except Exception:
             return None
 
     with app.app_context():
         db.create_all()
         ensure_schema_upgrades()
+        backfill_seeded_listing_ownership()
         seed_db_from_csv_if_empty()
 
     @app.get("/")
     def home():
         listings = Listing.query.order_by(Listing.created_at.desc()).all()
+        active_counts = get_active_reservation_counts([l.id for l in listings])
         active = [l for l in listings if l.status == "available"]
         return render_template(
             "index.html",
@@ -89,6 +96,7 @@ def create_app() -> Flask:
                 "reserved": len([l for l in listings if l.status == "reserved"]),
             },
             latest=active[:6],
+            active_reservation_counts=active_counts,
         )
 
     @app.get("/listings")
@@ -96,6 +104,14 @@ def create_app() -> Flask:
         q = (request.args.get("q") or "").strip().lower()
         category = (request.args.get("category") or "").strip().lower()
         status = (request.args.get("status") or "available").strip().lower()
+        # pagination
+        try:
+            page = int(request.args.get("page", "1"))
+        except ValueError:
+            page = 1
+        if page < 1:
+            page = 1
+        per_page = 12
 
         query = Listing.query
         if status in {"available", "reserved", "sold"}:
@@ -115,7 +131,14 @@ def create_app() -> Flask:
                 )
             )
 
-        filtered = query.order_by(Listing.created_at.desc()).all()
+        total = query.count()
+        offset = (page - 1) * per_page
+        total_pages = max((total + per_page - 1) // per_page, 1)
+        if page > total_pages:
+            page = total_pages
+            offset = (page - 1) * per_page
+        filtered = query.order_by(Listing.created_at.desc()).offset(offset).limit(per_page).all()
+        active_counts = get_active_reservation_counts([l.id for l in filtered])
 
         categories = [c[0] for c in db.session.query(Listing.category).distinct().order_by(Listing.category.asc()).all()]
         my_reserved_ids: set[str] = set()
@@ -126,6 +149,7 @@ def create_app() -> Flask:
                 .filter(Reservation.user_id == int(current_user.get_id()), Reservation.status == "active")
                 .all()
             }
+        # pagination metadata
         return render_template(
             "listings.html",
             listings=filtered,
@@ -134,6 +158,11 @@ def create_app() -> Flask:
             status=status,
             categories=categories,
             my_reserved_ids=my_reserved_ids,
+            page=page,
+            total_pages=total_pages,
+            per_page=per_page,
+            total_count=total,
+            active_reservation_counts=active_counts,
         )
 
     @app.get("/listings/new")
@@ -142,7 +171,16 @@ def create_app() -> Flask:
         if current_user.role != "seller":
             flash("Only sellers can post listings.", "error")
             return redirect(url_for("listings"))
-        return render_template("add_listing.html", form={}, now_local=local_now_str())
+        return render_template(
+            "add_listing.html",
+            form={},
+            now_local=local_now_str(),
+            page_title="Add a listing",
+            page_subtitle="Post surplus food for nearby people to reserve.",
+            submit_label="Create listing",
+            cancel_url=url_for("listings"),
+            action_url=url_for("create_listing_route"),
+        )
 
     @app.post("/listings")
     @login_required
@@ -155,7 +193,16 @@ def create_app() -> Flask:
         if errors:
             for e in errors:
                 flash(e, "error")
-            return render_template("add_listing.html", form=form, now_local=local_now_str()), 400
+            return render_template(
+                "add_listing.html",
+                form=form,
+                now_local=local_now_str(),
+                page_title="Add a listing",
+                page_subtitle="Post surplus food for nearby people to reserve.",
+                submit_label="Create listing",
+                cancel_url=url_for("listings"),
+                action_url=url_for("create_listing_route"),
+            ), 400
 
         listing_data = normalize_listing(form)
         listing = Listing(
@@ -177,48 +224,186 @@ def create_app() -> Flask:
         flash("Listing created.", "success")
         return redirect(url_for("listings"))
 
-    @app.post("/listings/<listing_id>/reserve")
+    @app.get("/listings/<listing_id>/edit")
     @login_required
-    def reserve_listing(listing_id: str):
-        listing = Listing.query.get(listing_id)
+    def edit_listing(listing_id: str):
+        if current_user.role != "seller":
+            flash("Only sellers can edit listings.", "error")
+            return redirect(url_for("listings"))
+
+        listing = db.session.get(Listing, listing_id)
         if not listing:
             flash("Listing not found.", "error")
             return redirect_back()
 
-        if listing.status != "available":
-            flash("This listing is not available.", "error")
+        if listing.seller_id != int(current_user.get_id()):
+            flash("You can only edit your own listings.", "error")
             return redirect_back()
 
-        existing = Reservation.query.filter_by(listing_id=listing_id, status="active").first()
-        if existing is not None:
-            flash("This listing is already reserved.", "error")
+        form = {
+            "title": listing.title,
+            "category": listing.category,
+            "price": listing.price,
+            "quantity": str(listing.quantity),
+            "pickup_start": listing.pickup_start,
+            "pickup_end": listing.pickup_end,
+            "location": listing.location,
+            "seller_name": listing.seller_name,
+            "seller_contact": listing.seller_contact,
+        }
+        return render_template(
+            "add_listing.html",
+            form=form,
+            now_local=local_now_str(),
+            page_title="Edit listing",
+            page_subtitle="Update the details for your listing.",
+            submit_label="Save changes",
+            cancel_url=url_for("my_listings"),
+            action_url=url_for("update_listing", listing_id=listing.id),
+        )
+
+    @app.post("/listings/<listing_id>/edit")
+    @login_required
+    def update_listing(listing_id: str):
+        if current_user.role != "seller":
+            flash("Only sellers can edit listings.", "error")
+            return redirect(url_for("listings"))
+
+        listing = db.session.get(Listing, listing_id)
+        if not listing:
+            flash("Listing not found.", "error")
             return redirect_back()
 
-        reservation = Reservation(listing_id=listing_id, user_id=int(current_user.get_id()), status="active")
-        db.session.add(reservation)
-        listing.status = "reserved"
+        if listing.seller_id != int(current_user.get_id()):
+            flash("You can only edit your own listings.", "error")
+            return redirect_back()
+
+        form = {k: (request.form.get(k) or "").strip() for k in request.form.keys()}
+        errors = validate_listing_form(form)
+        active_count = Reservation.query.filter_by(listing_id=listing_id, status="active").count()
+        try:
+            new_quantity = int(form.get("quantity", listing.quantity))
+        except ValueError:
+            new_quantity = listing.quantity
+        if new_quantity < active_count:
+            errors.append(f"Quantity cannot be less than the {active_count} active reservation(s).")
+
+        if errors:
+            for e in errors:
+                flash(e, "error")
+            return render_template(
+                "add_listing.html",
+                form=form,
+                now_local=local_now_str(),
+                page_title="Edit listing",
+                page_subtitle="Update the details for your listing.",
+                submit_label="Save changes",
+                cancel_url=url_for("my_listings"),
+                action_url=url_for("update_listing", listing_id=listing.id),
+            ), 400
+
+        listing.title = form["title"]
+        listing.category = form["category"]
+        listing.price = f"{float(form['price']):.2f}"
+        listing.quantity = new_quantity
+        listing.pickup_start = form["pickup_start"]
+        listing.pickup_end = form["pickup_end"]
+        listing.location = form["location"]
+        listing.seller_name = form.get("seller_name", "")
+        listing.seller_contact = form.get("seller_contact", "")
         db.session.commit()
-        flash("Reserved.", "success")
-        return redirect_back()
+        flash("Listing updated.", "success")
+        return redirect(url_for("my_listings"))
+
+    @app.post("/listings/<listing_id>/delete")
+    @login_required
+    def delete_listing(listing_id: str):
+        if current_user.role != "seller":
+            flash("Only sellers can delete listings.", "error")
+            return redirect(url_for("listings"))
+
+        listing = db.session.get(Listing, listing_id)
+        if not listing:
+            flash("Listing not found.", "error")
+            return redirect_back()
+
+        if listing.seller_id != int(current_user.get_id()):
+            flash("You can only delete your own listings.", "error")
+            return redirect_back()
+
+        active_count = Reservation.query.filter_by(listing_id=listing_id, status="active").count()
+        if active_count:
+            flash("You cannot delete a listing with active reservations.", "error")
+            return redirect_back()
+
+        Reservation.query.filter_by(listing_id=listing_id).delete(synchronize_session=False)
+        db.session.delete(listing)
+        db.session.commit()
+        flash("Listing deleted.", "success")
+        return redirect(url_for("my_listings"))
+
+    @app.post("/listings/<listing_id>/reserve")
+    @login_required
+    def reserve_listing(listing_id: str):
+        try:
+            with db.session.begin_nested():
+                res = db.session.execute(select(Listing).filter_by(id=listing_id).with_for_update())
+                listing = res.scalar_one_or_none()
+                if not listing:
+                    flash("Listing not found.", "error")
+                    return redirect_back()
+
+                if listing.status == "sold":
+                    flash("This listing is not available.", "error")
+                    return redirect_back()
+
+                active_count = db.session.query(Reservation).filter_by(listing_id=listing_id, status="active").count()
+                if active_count >= listing.quantity:
+                    flash("This listing is fully reserved.", "error")
+                    return redirect_back()
+
+                reservation = Reservation(listing_id=listing_id, user_id=int(current_user.get_id()), status="active")
+                db.session.add(reservation)
+                db.session.flush()
+                app.logger.info(f"Created reservation for listing {listing_id} by user {current_user.get_id()}")
+                # mark reserved if full or partially reserved
+                listing.status = "reserved" if active_count + 1 >= listing.quantity else "reserved"
+            flash("Reserved.", "success")
+            return redirect_back()
+        except Exception as e:
+            db.session.rollback()
+            app.logger.exception(f"Error reserving listing {listing_id}: {e}")
+            flash("Unable to reserve listing right now.", "error")
+            return redirect_back()
 
     @app.post("/listings/<listing_id>/unreserve")
     @login_required
     def unreserve_listing(listing_id: str):
-        listing = Listing.query.get(listing_id)
-        if not listing:
-            flash("Listing not found.", "error")
-            return redirect_back()
+        try:
+            with db.session.begin_nested():
+                res = db.session.execute(select(Listing).filter_by(id=listing_id).with_for_update())
+                listing = res.scalar_one_or_none()
+                if not listing:
+                    flash("Listing not found.", "error")
+                    return redirect_back()
 
-        reservation = Reservation.query.filter_by(listing_id=listing_id, user_id=int(current_user.get_id()), status="active").first()
-        if reservation is None:
-            flash("You don't have an active reservation for this listing.", "error")
-            return redirect_back()
+                reservation = db.session.query(Reservation).filter_by(listing_id=listing_id, user_id=int(current_user.get_id()), status="active").first()
+                if reservation is None:
+                    flash("You don't have an active reservation for this listing.", "error")
+                    return redirect_back()
 
-        reservation.status = "cancelled"
-        listing.status = "available"
-        db.session.commit()
-        flash("Reservation cancelled.", "success")
-        return redirect_back()
+                reservation.status = "cancelled"
+                db.session.flush()
+                app.logger.info(f"Cancelled reservation {reservation.id} for listing {listing_id} by user {current_user.get_id()}")
+                remaining = db.session.query(Reservation).filter_by(listing_id=listing_id, status="active").count()
+                listing.status = "available" if remaining == 0 else "reserved"
+            flash("Reservation cancelled.", "success")
+            return redirect_back()
+        except Exception as e:
+            db.session.rollback()
+            app.logger.exception(f"Error cancelling reservation {listing_id}: {e}")
+            flash("Unable to cancel reservation right now.", "error")
+            return redirect_back()
 
     @app.post("/listings/<listing_id>/claim")
     @login_required
@@ -227,7 +412,7 @@ def create_app() -> Flask:
             flash("Only sellers can claim listings.", "error")
             return redirect_back()
 
-        listing = Listing.query.get(listing_id)
+        listing = db.session.get(Listing, listing_id)
         if not listing:
             flash("Listing not found.", "error")
             return redirect_back()
@@ -252,23 +437,31 @@ def create_app() -> Flask:
         if current_user.role != "seller":
             flash("Only sellers can mark items as sold.", "error")
             return redirect_back()
-        listing = Listing.query.get(listing_id)
-        if not listing:
-            flash("Listing not found.", "error")
-            return redirect_back()
-        # Strict ownership check: listings with no owner cannot be sold from UI actions.
-        if listing.seller_id != int(current_user.get_id()):
-            flash("You can only mark your own listings as sold.", "error")
-            return redirect_back()
+        try:
+            with db.session.begin_nested():
+                res = db.session.execute(select(Listing).filter_by(id=listing_id).with_for_update())
+                listing = res.scalar_one_or_none()
+                if not listing:
+                    flash("Listing not found.", "error")
+                    return redirect_back()
 
-        listing.status = "sold"
-        # If it was reserved, mark that active reservation completed.
-        active_res = Reservation.query.filter_by(listing_id=listing_id, status="active").first()
-        if active_res is not None:
-            active_res.status = "completed"
-        db.session.commit()
-        flash("Marked as sold.", "success")
-        return redirect_back()
+                # Strict ownership check: listings with no owner cannot be sold from UI actions.
+                if listing.seller_id != int(current_user.get_id()):
+                    flash("You can only mark your own listings as sold.", "error")
+                    return redirect_back()
+
+                listing.status = "sold"
+                # mark all active reservations completed
+                active_reservations = db.session.query(Reservation).filter_by(listing_id=listing_id, status="active").all()
+                for active_res in active_reservations:
+                    active_res.status = "completed"
+            flash("Marked as sold.", "success")
+            return redirect_back()
+        except Exception as e:
+            db.session.rollback()
+            app.logger.exception(f"Error marking sold {listing_id}: {e}")
+            flash("Unable to mark sold right now.", "error")
+            return redirect_back()
 
     @app.get("/health")
     def health():
@@ -295,7 +488,8 @@ def create_app() -> Flask:
             .order_by(Listing.created_at.desc())
             .all()
         )
-        return render_template("my_listings.html", listings=listings)
+        active_counts = get_active_reservation_counts([l.id for l in listings])
+        return render_template("my_listings.html", listings=listings, active_reservation_counts=active_counts)
 
     @app.get("/signup")
     def signup():
@@ -320,8 +514,8 @@ def create_app() -> Flask:
             errors.append("Enter a valid email.")
         if not name:
             errors.append("Enter your name.")
-        if len(password) < 6:
-            errors.append("Password must be at least 6 characters.")
+        if len(password) < 8:
+            errors.append("Password must be at least 8 characters.")
         if User.query.filter_by(email=email).first() is not None:
             errors.append("An account with that email already exists.")
 
@@ -378,8 +572,21 @@ def redirect_back():
     return redirect(request.referrer or url_for("listings"))
 
 
+def get_active_reservation_counts(listing_ids: list[str]) -> dict[str, int]:
+    if not listing_ids:
+        return {}
+
+    rows = (
+        db.session.query(Reservation.listing_id, db.func.count(Reservation.id))
+        .filter(Reservation.listing_id.in_(listing_ids), Reservation.status == "active")
+        .group_by(Reservation.listing_id)
+        .all()
+    )
+    return {listing_id: count for listing_id, count in rows}
+
+
 def update_status(listing_id: str, status: str) -> bool:
-    listing = Listing.query.get(listing_id)
+    listing = db.session.get(Listing, listing_id)
     if not listing:
         return False
     listing.status = status
@@ -396,6 +603,7 @@ def seed_db_from_csv_if_empty() -> None:
         return
 
     try:
+        seller_cache: dict[tuple[str, str], User] = {}
         with DATA_PATH.open(newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             imported = 0
@@ -414,7 +622,7 @@ def seed_db_from_csv_if_empty() -> None:
 
                 if not rid or not title:
                     continue
-                if Listing.query.get(rid) is not None:
+                if db.session.get(Listing, rid) is not None:
                     continue
 
                 try:
@@ -422,8 +630,11 @@ def seed_db_from_csv_if_empty() -> None:
                 except ValueError:
                     q_int = 1
 
+                seller_user = get_or_create_seed_seller_user(seller_name, seller_contact, seller_cache)
+
                 listing = Listing(
                     id=rid,
+                    seller_id=seller_user.id if seller_user is not None else None,
                     title=title,
                     category=category or "Other",
                     price=price or "0.00",
@@ -444,6 +655,58 @@ def seed_db_from_csv_if_empty() -> None:
         db.session.rollback()
         # If import fails, app still runs; user can add listings manually.
         return
+
+
+def backfill_seeded_listing_ownership() -> None:
+    """Attach seller ownership to existing seeded listings when possible."""
+    seller_cache: dict[tuple[str, str], User] = {}
+    changed = False
+    for listing in Listing.query.filter(Listing.seller_id.is_(None)).all():
+        if not listing.seller_name and not listing.seller_contact:
+            continue
+        seller_user = get_or_create_seed_seller_user(listing.seller_name, listing.seller_contact, seller_cache)
+        if seller_user is None:
+            continue
+        listing.seller_id = seller_user.id
+        changed = True
+    if changed:
+        db.session.commit()
+
+
+def get_or_create_seed_seller_user(
+    seller_name: str,
+    seller_contact: str,
+    seller_cache: dict[tuple[str, str], User],
+) -> User | None:
+    seller_name = (seller_name or "").strip()
+    seller_contact = (seller_contact or "").strip().lower()
+    if not seller_name and not seller_contact:
+        return None
+
+    cache_key = (seller_name.lower(), seller_contact)
+    if cache_key in seller_cache:
+        return seller_cache[cache_key]
+
+    if seller_contact and "@" in seller_contact:
+        email = seller_contact
+    else:
+        base = seller_name or seller_contact or "seeded-seller"
+        slug = "".join(ch.lower() if ch.isalnum() else "-" for ch in base).strip("-") or "seeded-seller"
+        email = f"{slug}@ecoeats.local"
+
+    user = User.query.filter_by(email=email).first()
+    if user is None:
+        user = User(
+            email=email,
+            name=seller_name or seller_contact or "Seeded Seller",
+            password_hash=generate_password_hash(secrets.token_urlsafe(16)),
+            role="seller",
+        )
+        db.session.add(user)
+        db.session.flush()
+
+    seller_cache[cache_key] = user
+    return user
 
 
 def ensure_schema_upgrades() -> None:

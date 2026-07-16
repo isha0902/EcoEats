@@ -3,16 +3,16 @@
 {% block content %}
   <section class="pageHead">
     <div>
-      <h1 class="pageHead__title">Add a listing</h1>
-      <p class="pageHead__subtitle">Post surplus food for nearby people to reserve.</p>
+      <h1 class="pageHead__title">{{ page_title or "Add a listing" }}</h1>
+      <p class="pageHead__subtitle">{{ page_subtitle or "Post surplus food for nearby people to reserve." }}</p>
     </div>
     <div class="pageHead__actions">
-      <a class="btn btn--ghost" href="{{ url_for('listings') }}">Back to browse</a>
+      <a class="btn btn--ghost" href="{{ cancel_url or url_for('listings') }}">Back</a>
     </div>
   </section>
 
   <section class="card formCard">
-    <form method="post" action="{{ url_for('create_listing_route') }}" class="form">
+    <form method="post" action="{{ action_url or url_for('create_listing_route') }}" class="form">
       <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
       <div class="grid grid--2">
         <div class="field">
@@ -74,8 +74,8 @@
       </div>
 
       <div class="form__actions">
-        <button class="btn btn--primary" type="submit">Create listing</button>
-        <a class="btn btn--ghost" href="{{ url_for('listings') }}">Cancel</a>
+        <button class="btn btn--primary" type="submit">{{ submit_label or "Create listing" }}</button>
+        <a class="btn btn--ghost" href="{{ cancel_url or url_for('listings') }}">Cancel</a>
       </div>
     </form>
   </section>
