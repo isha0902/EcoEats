@@ -86,4 +86,7 @@ _Add screenshots here later (e.g., UI snapshots of the listings page, add listin
 _Paste live demo URL here._
 
 ---
+<<<<<<< HEAD
 
+=======
+>>>>>>> a242ae4ba496d59ed47796901bebe46f716e098c
