@@ -60,6 +60,26 @@ export DATABASE_URL="postgresql://user:pass@host:5432/dbname"
 - `data/` — seed CSV and local SQLite DB
 - `run_local.sh` — one-command local setup
 
+## Screenshots
+
+**Homepage**
+![Homepage](screenshots/homepage_ecoeats.png)
+
+**Sign up — role-based accounts**
+![Sign up](screenshots/signup.png)
+
+**Browsing listings**
+![Browse listings](screenshots/browse-listings.png)
+
+**Buyer reservations**
+![My reservations](screenshots/my-reservations.png)
+
+**Seller listing management**
+![My listings](screenshots/my-listings.png)
+
+**Adding a listing**
+![Add a listing](screenshots/add-listing.png)
+
 ## A note on security
 
 CSRF protection here is a lightweight, session-based implementation I built myself — it works, but for a production app I'd swap in something battle-tested like Flask-WTF instead. Same goes for secrets: always pull them from environment variables, never commit them.
