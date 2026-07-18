@@ -2,6 +2,10 @@
 
 EcoEats is a small community marketplace for surplus or home-made food. Sellers post listings with pickup windows and quantities, and buyers can reserve and pick them up. It started as a learning project for building a full-stack app with Flask, but it's grown into a fairly complete little marketplace — authentication, roles, reservations, and CSRF protection included.
 
+🔗 **[Live demo](https://ecoeats-kn55.onrender.com)**
+
+*(Hosted on Render's free tier — the app may take 30-50 seconds to wake up on first load if it's been idle.)*
+
 ## Tech stack
 
 - Python 3 + Flask
