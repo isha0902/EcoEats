@@ -1,44 +1,36 @@
 # EcoEats
 
-EcoEats is a simple community marketplace that connects local sellers with buyers for surplus or home-made food items. Sellers can post listings with pickup windows and quantities; buyers can reserve items and complete purchases. The app is intended as a lightweight starter project for learning web development with Flask and small-scale marketplaces.
+EcoEats is a small community marketplace for surplus or home-made food. Sellers post listings with pickup windows and quantities, and buyers can reserve and pick them up. It started as a learning project for building a full-stack app with Flask, but it's grown into a fairly complete little marketplace — authentication, roles, reservations, and CSRF protection included.
 
 ## Tech stack
 
-- Python 3
-- Flask (server and templating)
-- Flask-SQLAlchemy (ORM)
-- Flask-Login (authentication)
-- SQLite (default dev database)
-- HTML / Jinja2 templates, CSS, and minimal JavaScript for UI
+- Python 3 + Flask
+- Flask-SQLAlchemy for the database layer
+- Flask-Login for authentication
+- SQLite for local development
+- Jinja2 templates, plain CSS/JS for the frontend
 
-## Key features
+## What it does
 
-- User authentication (signup/login)
-- Role-based access: buyers and sellers
-- Create, browse, and manage listings (sellers)
-- Reserve items and view reservations (buyers)
-- Claim unassigned/legacy listings (sellers)
-- Lightweight CSRF protection for POST forms
-- Environment-driven configuration (SECRET_KEY, DATABASE_URL)
+- Sign up and log in as a buyer or seller
+- Sellers can create, edit, and manage their own listings
+- Buyers can browse, reserve, and track what they've reserved
+- Old/legacy listings without an owner can be claimed by a seller
+- CSRF protection on every form
+- Config (secret key, database URL) comes from environment variables, not hardcoded
 
-## Quick setup (recommended)
+## Running it locally
 
-The repository includes a helper script `run_local.sh` to create a virtual environment, install dependencies, set reasonable default env vars for local development, and start the app.
-
-From the project root:
+The easiest way is the included setup script, which handles the virtual environment, dependencies, and seeding:
 
 ```bash
-chmod +x run_local.sh   # only required once
+chmod +x run_local.sh   # only needed once
 ./run_local.sh
 ```
 
-The script will:
-- create or reuse a `.venv` virtual environment
-- install packages from `requirements.txt`
-- seed the database from `data/food.csv` if the database is empty
-- start the Flask development server
+This sets up a `.venv`, installs everything in `requirements.txt`, seeds the database from `data/food.csv` if it's empty, and starts the Flask dev server.
 
-If you prefer to run manually:
+If you'd rather do it by hand:
 
 ```bash
 python3 -m venv .venv
@@ -49,14 +41,10 @@ export DATABASE_URL="sqlite:///data/ecoeats.sqlite3"
 python app.py
 ```
 
-By default the app uses `data/ecoeats.sqlite3` for local development. If `DATABASE_URL` points to an empty database the app will seed initial listings from `data/food.csv`.
-
 ## Environment variables
 
-- `SECRET_KEY` (required) — Flask secret key used for sessions and CSRF tokens. For development you can use a simple string, but in production use a secure random value.
-- `DATABASE_URL` (optional) — SQLAlchemy database URL. Defaults to `sqlite:///data/ecoeats.sqlite3`. The app normalizes `postgres://` → `postgresql://` if needed.
-
-Example:
+- `SECRET_KEY` — used for sessions and CSRF tokens. Any string works for local dev; use something properly random in production.
+- `DATABASE_URL` — defaults to a local SQLite file if not set. Also accepts a Postgres URL (`postgres://` gets normalized to `postgresql://` automatically).
 
 ```bash
 export SECRET_KEY="replace-with-a-secret"
@@ -65,28 +53,13 @@ export DATABASE_URL="postgresql://user:pass@host:5432/dbname"
 
 ## Project layout
 
-- `app.py` — Flask application, routes, CSRF helper, and initialization
-- `db.py` — SQLAlchemy models (`User`, `Listing`, `Reservation`) and helpers
-- `templates/` — Jinja2 templates for pages and forms
-- `static/` — CSS and JavaScript
-- `data/` — bundled CSV seed and development SQLite DB
-- `run_local.sh` — convenience script to set up and run locally
+- `app.py` — routes, CSRF handling, app setup
+- `db.py` — SQLAlchemy models: `User`, `Listing`, `Reservation`
+- `templates/` — Jinja2 templates
+- `static/` — CSS and JS
+- `data/` — seed CSV and local SQLite DB
+- `run_local.sh` — one-command local setup
 
-## Security & notes
+## A note on security
 
-- A lightweight, session-backed CSRF protection is implemented; all POST forms include a CSRF token. This is sufficient for a learning/demo app but consider integrating a mature library (e.g., Flask-WTF) for production workloads.
-- Environment variables should be used for secrets and production database connections. Do not commit credentials to source control.
-
-## Screenshots
-
-_Add screenshots here later (e.g., UI snapshots of the listings page, add listing flow, reservations)._ 
-
-## Live demo
-
-_Paste live demo URL here._
-
----
-<<<<<<< HEAD
-
-=======
->>>>>>> a242ae4ba496d59ed47796901bebe46f716e098c
+CSRF protection here is a lightweight, session-based implementation I built myself — it works, but for a production app I'd swap in something battle-tested like Flask-WTF instead. Same goes for secrets: always pull them from environment variables, never commit them.
