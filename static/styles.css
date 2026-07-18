@@ -19,17 +19,50 @@
 html,body{height:100%}
 body{
   margin:0;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
   color:var(--text);
   background:
-    radial-gradient(1000px 600px at 15% -10%, rgba(72,209,141,.18), transparent 55%),
-    radial-gradient(900px 500px at 90% 0%, rgba(124,196,255,.14), transparent 55%),
-    radial-gradient(1000px 700px at 50% 110%, rgba(72,209,141,.10), transparent 60%),
+    linear-gradient(180deg, rgba(5,8,11,.36) 0%, rgba(8,11,15,.28) 42%, rgba(5,8,11,.48) 100%),
+    radial-gradient(900px 520px at 14% 8%, rgba(240,162,75,.16), transparent 60%),
+    radial-gradient(760px 480px at 86% 10%, rgba(125,223,232,.12), transparent 58%),
+    url("bg-food.jpg"),
     var(--bg);
+  background-size: cover, cover, cover, cover, auto;
+  background-position: center, center, center, center, center;
+  background-attachment: fixed, fixed, fixed, fixed, scroll;
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+  background-color:#0b0f14;
+}
+ .header{
+  background: rgba(8,12,16,.22);
+  border-bottom-color: rgba(255,255,255,.06);
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+}
+.footer{
+  background: rgba(8,12,16,.18);
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+}
+.brand__dot{
+  background:linear-gradient(135deg, #ff7a59 0%, #ffb36b 45%, #7ddfe8 100%);
+  box-shadow: 0 0 0 6px rgba(255,122,89,.12);
+}
+.nav__link--primary{
+  color:#fff7f3;
+  background:linear-gradient(135deg, #ff7a59 0%, #ff9d5c 52%, #ffc36b 100%);
+  box-shadow:0 12px 24px rgba(255,122,89,.22);
+}
+.nav__link--primary:hover{
+  filter:brightness(1.04);
 }
 
 a{color:inherit; text-decoration:none}
 .container{max-width:1100px; margin:0 auto; padding:0 18px}
+main.container{flex:1 0 auto; width:100%}
 
 .srOnly{
   position:absolute !important;
@@ -95,7 +128,7 @@ a{color:inherit; text-decoration:none}
 }
 
 .footer{
-  margin-top:56px;
+  margin-top:auto;
   padding:26px 0;
   border-top:1px solid var(--border);
   background: rgba(11,15,20,.35);
@@ -129,6 +162,60 @@ a{color:inherit; text-decoration:none}
 }
 @media (max-width: 900px){
   .landingHero{grid-template-columns: 1fr; padding-top:18px}
+}
+
+.searchBar__button,
+.btn--primary{
+  color:#23140f;
+  background:linear-gradient(135deg, #ff7a59 0%, #ffb36b 52%, #ffe08a 100%);
+  box-shadow:0 16px 30px rgba(255,122,89,.24);
+}
+.btn--primary:hover,
+.searchBar__button:hover{
+  filter:brightness(1.04);
+}
+.btn--ghost{
+  border-color:rgba(255,122,89,.24);
+  background:rgba(255,122,89,.12);
+  color:#fff3ec;
+}
+.btn--ghost:hover{
+  background:rgba(255,122,89,.18);
+  border-color:rgba(255,180,107,.34);
+}
+.btn{
+  box-shadow:0 14px 30px rgba(0,0,0,.18);
+}
+.card,
+.listingRow,
+.heroArt{
+  background:rgba(10,14,19,.52);
+  border-color:rgba(255,255,255,.10);
+  box-shadow:0 22px 60px rgba(0,0,0,.32);
+}
+.heroArt__arrow{
+  background:rgba(10,14,19,.62);
+  border-color:rgba(255,255,255,.14);
+}
+.heroArt__plate{
+  border-color:rgba(255,255,255,.08);
+}
+.tag,
+.pill,
+.tag--unassigned{
+  border-color:rgba(255,255,255,.12);
+}
+.tag{
+  background:rgba(124,196,255,.10);
+  color:rgba(220,237,255,.96);
+}
+.tag--unassigned{
+  background:rgba(246,176,84,.14);
+  color:rgba(255,229,188,.98);
+}
+.pill{
+  background:rgba(72,209,141,.08);
+  color:rgba(218,255,236,.96);
 }
 
 .landingHero__left{position:relative}
