@@ -87,4 +87,3 @@ _Paste live demo URL here._
 
 ---
 
-If you'd like, I can add example screenshots, prepare a `docker-compose` file for local containerized runs, or create a short demo video. Would you like me to add screenshots placeholders into the UI templates as well?
