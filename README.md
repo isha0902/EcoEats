@@ -69,22 +69,22 @@ export DATABASE_URL="postgresql://user:pass@host:5432/dbname"
 ## Screenshots
 
 **Homepage**
-![Homepage](screenshots/homepage_ecoeats.png)
+![Homepage](screenshots/Homepage.png)
 
 **Sign up — role-based accounts**
-![Sign up](screenshots/signup.png)
+![Sign up](screenshots/Signup.png)
 
 **Browsing listings**
-![Browse listings](screenshots/browse-listings.png)
+![Browse listings](screenshots/Browsinglistings.png)
 
 **Buyer reservations**
-![My reservations](screenshots/my-reservations.png)
+![My reservations](screenshots/buyer.png)
 
 **Seller listing management**
-![My listings](screenshots/my-listings.png)
+![My listings](screenshots/seller.png)
 
 **Adding a listing**
-![Add a listing](screenshots/add-listing.png)
+![Add a listing](screenshots/Addlistings.png)
 
 ## A note on security
 
