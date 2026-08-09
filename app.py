@@ -304,7 +304,7 @@ def create_app() -> Flask:
 
         listing.title = form["title"]
         listing.category = form["category"]
-        listing.price = f"{float(form['price']):.2f}"
+        listing.price = format_inr_price(form["price"])
         listing.quantity = new_quantity
         listing.pickup_start = form["pickup_start"]
         listing.pickup_end = form["pickup_end"]
@@ -758,13 +758,24 @@ def validate_listing_form(form: dict[str, str]) -> list[str]:
     return errors
 
 
+def format_inr_price(value: float | str | int) -> str:
+    try:
+        amount = float(value)
+    except (TypeError, ValueError):
+        return "0"
+
+    if abs(amount - round(amount)) < 1e-9:
+        return str(int(round(amount)))
+    return f"{amount:.2f}"
+
+
 def normalize_listing(form: dict[str, str]) -> dict[str, str]:
     now = datetime.now(timezone.utc).isoformat()
     return {
         "id": uuid.uuid4().hex,
         "title": form.get("title", ""),
         "category": form.get("category", ""),
-        "price": f"{float(form.get('price', '0') or 0):.2f}",
+        "price": format_inr_price(form.get("price", "0") or 0),
         "quantity": str(int(form.get("quantity", "1") or 1)),
         "pickup_start": form.get("pickup_start", ""),
         "pickup_end": form.get("pickup_end", ""),

@@ -34,6 +34,8 @@ chmod +x run_local.sh   # only needed once
 
 This sets up a `.venv`, installs everything in `requirements.txt`, seeds the database from `data/food.csv` if it's empty, and starts the Flask dev server.
 
+If you edit `data/food.csv` and want the local SQLite DB to reseed with the new sample listings, delete `data/ecoeats.sqlite3` first so the app imports the updated CSV on the next run.
+
 If you'd rather do it by hand:
 
 ```bash
