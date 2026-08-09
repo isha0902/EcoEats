@@ -598,6 +598,15 @@ def update_status(listing_id: str, status: str) -> bool:
     return True
 
 
+def normalize_seed_price(value: str) -> str:
+    cleaned = (value or "").strip()
+    if not cleaned:
+        return "0"
+    if cleaned.startswith("₹"):
+        return cleaned
+    return cleaned
+
+
 def seed_db_from_csv_if_empty() -> None:
     # One-time convenience: if the database has no rows but food.csv exists, import it.
     if Listing.query.first() is not None:
@@ -641,7 +650,7 @@ def seed_db_from_csv_if_empty() -> None:
                     seller_id=seller_user.id if seller_user is not None else None,
                     title=title,
                     category=category or "Other",
-                    price=price or "0.00",
+                    price=normalize_seed_price(price) or "0",
                     quantity=q_int,
                     pickup_start=pickup_start or "",
                     pickup_end=pickup_end or "",

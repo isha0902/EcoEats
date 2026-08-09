@@ -6,7 +6,7 @@ from uuid import uuid4
 
 import pytest
 
-from app import create_app
+from app import create_app, normalize_seed_price
 from db import db, Listing, Reservation, User
 
 
@@ -61,6 +61,11 @@ def test_health(client):
     rv = client.get("/health")
     assert rv.status_code == 200
     assert rv.json.get("ok") is True
+
+
+def test_normalize_seed_price_keeps_existing_rupee_symbol():
+    assert normalize_seed_price("₹180") == "₹180"
+    assert normalize_seed_price("140") == "140"
 
 
 def test_seed_csv_duplicate_header_row_is_ignored(client):
