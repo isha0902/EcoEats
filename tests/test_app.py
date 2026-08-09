@@ -381,8 +381,13 @@ def test_listings_pagination_preserves_filters(client):
 
 
 def test_seeded_listings_keep_owner_assignment(client):
+    with Path("data/food.csv").open(newline="", encoding="utf-8") as fh:
+        seeded_row = next(csv.DictReader(fh), {})
+    seeded_id = (seeded_row.get("id") or "").strip()
+    assert seeded_id
+
     with client.application.app_context():
-        seeded_listing = Listing.query.filter_by(id="lst001").first()
+        seeded_listing = Listing.query.filter_by(id=seeded_id).first()
         assert seeded_listing is not None
         assert seeded_listing.seller_id is not None
         assert seeded_listing.seller is not None
