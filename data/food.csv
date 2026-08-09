@@ -1,0 +1,16 @@
+id,title,category,price,quantity,pickup_start,pickup_end,location,seller_name,seller_contact,status,created_at
+lst001,Mixed bakery box,Bakery,₹180,5,2026-08-10T09:00,2026-08-10T18:00,"Indiranagar, Bengaluru",Ananya Rao,ananya.rao@example.com,available,2026-08-09T08:00:00
+lst002,Surplus veggie bowls,Vegetables,₹140,8,2026-08-10T10:00,2026-08-10T20:00,"Andheri West, Mumbai",Rohan Mehta,rohan.mehta@example.com,available,2026-08-09T08:05:00
+lst003,Seasonal fruit bag,Fruits,₹90,10,2026-08-10T08:00,2026-08-10T17:00,"Lajpat Nagar, Delhi",Priya Nair,priya.nair@example.com,available,2026-08-09T08:10:00
+lst004,Homemade dal and rice pack,Cooked Meals,₹120,6,2026-08-10T12:00,2026-08-10T21:00,"Koramangala, Bengaluru",Vikram Shah,vikram.shah@example.com,available,2026-08-09T08:15:00
+lst005,Leftover wedding sweets box,Sweets,₹150,4,2026-08-10T11:00,2026-08-10T19:00,"Bandra West, Mumbai",Sneha Kapoor,sneha.kapoor@example.com,available,2026-08-09T08:20:00
+lst006,Surplus bread loaves,Bakery,₹60,12,2026-08-10T07:00,2026-08-10T16:00,"Karol Bagh, Delhi",Arjun Verma,arjun.verma@example.com,available,2026-08-09T08:25:00
+lst007,Fresh paneer pack,Dairy,₹100,7,2026-08-10T09:30,2026-08-10T18:30,"Whitefield, Bengaluru",Meera Iyer,meera.iyer@example.com,available,2026-08-09T08:30:00
+lst008,Assorted pickles jars,Groceries,₹200,5,2026-08-10T10:30,2026-08-10T20:30,"Powai, Mumbai",Karan Malhotra,karan.malhotra@example.com,available,2026-08-09T08:35:00
+lst009,Vegetable pulao tubs,Cooked Meals,₹130,9,2026-08-10T13:00,2026-08-10T21:30,"Saket, Delhi",Divya Reddy,divya.reddy@example.com,available,2026-08-09T08:40:00
+lst010,Surplus rotis and sabzi,Cooked Meals,₹80,10,2026-08-10T12:30,2026-08-10T19:30,"HSR Layout, Bengaluru",Aditya Kumar,aditya.kumar@example.com,available,2026-08-09T08:45:00
+lst011,Ripe banana crates,Fruits,₹50,15,2026-08-10T08:30,2026-08-10T17:30,"Juhu, Mumbai",Ishita Joshi,ishita.joshi@example.com,available,2026-08-09T08:50:00
+lst012,Millet cookies pack,Bakery,₹110,6,2026-08-10T09:00,2026-08-10T18:00,"Connaught Place, Delhi",Nikhil Bansal,nikhil.bansal@example.com,available,2026-08-09T08:55:00
+lst013,Leafy greens bundle,Vegetables,₹40,20,2026-08-10T07:30,2026-08-10T16:30,"Malleshwaram, Bengaluru",Ritu Sharma,ritu.sharma@example.com,available,2026-08-09T09:00:00
+lst014,Surplus samosas box,Snacks,₹70,10,2026-08-10T14:00,2026-08-10T20:00,"Dadar, Mumbai",Manish Gupta,manish.gupta@example.com,available,2026-08-09T09:05:00
+lst015,Curd and buttermilk pack,Dairy,₹90,8,2026-08-10T09:00,2026-08-10T17:00,"Rohini, Delhi",Kavya Menon,kavya.menon@example.com,available,2026-08-09T09:10:00

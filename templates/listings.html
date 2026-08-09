@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="pageHead">
+    <div>
+      <h1 class="pageHead__title">Listings</h1>
+      <p class="pageHead__subtitle">Browse surplus food and reserve a pickup.</p>
+    </div>
+    <div class="pageHead__actions">
+      {% if current_user.is_authenticated %}
+        {% if current_user.role == "seller" %}
+          <a class="btn btn--primary" href="{{ url_for('new_listing') }}">Add listing</a>
+        {% else %}
+          <a class="btn btn--primary" href="{{ url_for('my_reservations') }}">My reservations</a>
+        {% endif %}
+      {% else %}
+        <a class="btn btn--primary" href="{{ url_for('login') }}">Login to reserve</a>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="card filters">
+    <form class="filters__form" method="get" action="{{ url_for('listings') }}">
+      <div class="field">
+        <label class="label" for="q">Search</label>
+        <input class="input" id="q" name="q" placeholder="pizza, bakery, Indiranagar…" value="{{ q }}" />
+      </div>
+      <div class="field">
+        <label class="label" for="category">Category</label>
+        <select class="select" id="category" name="category">
+          <option value="">All</option>
+          {% for c in categories %}
+            <option value="{{ c|lower }}" {% if category == c|lower %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="label" for="status">Status</label>
+        <select class="select" id="status" name="status">
+          <option value="available" {% if status == "available" %}selected{% endif %}>Available</option>
+          <option value="reserved" {% if status == "reserved" %}selected{% endif %}>Reserved</option>
+          <option value="sold" {% if status == "sold" %}selected{% endif %}>Sold</option>
+        </select>
+      </div>
+      <div class="filters__buttons">
+        <button class="btn btn--primary" type="submit">Apply</button>
+        <a class="btn btn--ghost" href="{{ url_for('listings') }}">Reset</a>
+      </div>
+    </form>
+  </section>
+
+  {% if listings %}
+    <section class="grid grid--cards">
+      {% for l in listings %}
+        <article class="card listingCard">
+          <div class="listingCard__top">
+            <div>
+              <div class="listingCard__title">{{ l.title }}</div>
+              <div class="listingCard__meta">
+                <span class="tag">{{ l.category }}</span>
+                {% if current_user.is_authenticated and current_user.role == "seller" and l.seller_id is none %}
+                  <span class="dot">•</span>
+                  <span class="tag tag--unassigned">Unassigned</span>
+                {% endif %}
+                <span class="dot">•</span>
+                <span class="muted">{{ l.location }}</span>
+              </div>
+            </div>
+            <div class="listingCard__price">
+              <div class="price">{{ l.price }}</div>
+              <div class="muted">qty {{ l.quantity }}</div>
+              {% set active_count = active_reservation_counts.get(l.id, 0) %}
+              {% if l.quantity > 1 or active_count %}
+                <div class="muted">{{ active_count }}/{{ l.quantity }} reserved</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="listingCard__details">
+            <div class="detail">
+              <div class="detail__label">Pickup window</div>
+              <div class="detail__value">{{ l.pickup_start }} → {{ l.pickup_end }}</div>
+            </div>
+            {% if l.seller_name %}
+              <div class="detail">
+                <div class="detail__label">Seller</div>
+                <div class="detail__value">{{ l.seller_name }}</div>
+              </div>
+            {% endif %}
+            {% if l.seller_contact %}
+              <div class="detail">
+                <div class="detail__label">Contact</div>
+                <div class="detail__value">{{ l.seller_contact }}</div>
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="listingCard__actions">
+              {% if l.status == "available" %}
+              {% if current_user.is_authenticated %}
+                <form method="post" action="{{ url_for('reserve_listing', listing_id=l.id) }}">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
+                  <button class="btn btn--primary" type="submit">Reserve</button>
+                </form>
+              {% else %}
+                <a class="btn btn--primary" href="{{ url_for('login') }}">Login to reserve</a>
+              {% endif %}
+                {% if current_user.is_authenticated and current_user.role == "seller" and l.seller_id == (current_user.get_id()|int) %}
+                <form method="post" action="{{ url_for('mark_sold', listing_id=l.id) }}">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
+                  <button class="btn btn--ghost" type="submit">Mark sold</button>
+                </form>
+              {% endif %}
+                {% if current_user.is_authenticated and current_user.role == "seller" and l.seller_id is none %}
+                  <form method="post" action="{{ url_for('claim_listing', listing_id=l.id) }}">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
+                    <button class="btn btn--ghost" type="submit">Claim listing</button>
+                  </form>
+                {% endif %}
+            {% elif l.status == "reserved" %}
+              {% if current_user.is_authenticated and (l.id in (my_reserved_ids or [])) %}
+                <form method="post" action="{{ url_for('unreserve_listing', listing_id=l.id) }}">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
+                  <button class="btn btn--ghost" type="submit">Cancel reservation</button>
+                </form>
+              {% else %}
+                <div class="pill pill--muted">Reserved</div>
+              {% endif %}
+                {% if current_user.is_authenticated and current_user.role == "seller" and l.seller_id == (current_user.get_id()|int) %}
+                <form method="post" action="{{ url_for('mark_sold', listing_id=l.id) }}">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
+                  <button class="btn btn--primary" type="submit">Complete sale</button>
+                </form>
+              {% endif %}
+                {% if current_user.is_authenticated and current_user.role == "seller" and l.seller_id is none %}
+                  <form method="post" action="{{ url_for('claim_listing', listing_id=l.id) }}">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
+                    <button class="btn btn--ghost" type="submit">Claim listing</button>
+                  </form>
+                {% endif %}
+            {% else %}
+              <div class="pill pill--muted">Sold</div>
+            {% endif %}
+          </div>
+        </article>
+      {% endfor %}
+    </section>
+    <nav class="pagination" aria-label="Listings pagination">
+      <div class="pagination__inner">
+        {% if total_pages > 1 %}
+          {% set qs = {'q': q, 'category': category, 'status': status} %}
+          <div class="pagination__pages">
+            {# First / Prev #}
+            {% if page > 1 %}
+              <a class="btn btn--ghost" href="{{ url_for('listings', q=q, category=category, status=status, page=1) }}">First</a>
+              <a class="btn btn--ghost" href="{{ url_for('listings', q=q, category=category, status=status, page=page-1) }}">← Prev</a>
+            {% else %}
+              <span class="btn btn--ghost" aria-disabled="true">First</span>
+              <span class="btn btn--ghost" aria-disabled="true">← Prev</span>
+            {% endif %}
+
+            {# Windowed page numbers (current ±2) #}
+            {% set start_page = page-2 if page-2 > 1 else 1 %}
+            {% set end_page = page+2 if page+2 < total_pages else total_pages %}
+
+            {% if start_page > 1 %}
+              <a class="btn btn--ghost" href="{{ url_for('listings', q=q, category=category, status=status, page=1) }}">1</a>
+              {% if start_page > 2 %}
+                <span class="pagination__ellipsis">…</span>
+              {% endif %}
+            {% endif %}
+
+            {% for p in range(start_page, end_page + 1) %}
+              {% if p == page %}
+                <span class="btn btn--primary" aria-current="page">{{ p }}</span>
+              {% else %}
+                <a class="btn btn--ghost" href="{{ url_for('listings', q=q, category=category, status=status, page=p) }}">{{ p }}</a>
+              {% endif %}
+            {% endfor %}
+
+            {% if end_page < total_pages %}
+              {% if end_page < total_pages - 1 %}
+                <span class="pagination__ellipsis">…</span>
+              {% endif %}
+              <a class="btn btn--ghost" href="{{ url_for('listings', q=q, category=category, status=status, page=total_pages) }}">{{ total_pages }}</a>
+            {% endif %}
+
+            {# Next / Last #}
+            {% if page < total_pages %}
+              <a class="btn btn--ghost" href="{{ url_for('listings', q=q, category=category, status=status, page=page+1) }}">Next →</a>
+              <a class="btn btn--ghost" href="{{ url_for('listings', q=q, category=category, status=status, page=total_pages) }}">Last</a>
+            {% else %}
+              <span class="btn btn--ghost" aria-disabled="true">Next →</span>
+              <span class="btn btn--ghost" aria-disabled="true">Last</span>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+    </nav>
+  {% else %}
+    <section class="card empty">
+      <h2 class="empty__title">No matches</h2>
+      <p class="empty__subtitle">Try changing filters, or post a new listing.</p>
+      <a class="btn btn--primary" href="{{ url_for('new_listing') }}">Add listing</a>
+    </section>
+  {% endif %}
+{% endblock %}

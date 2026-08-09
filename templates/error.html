@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="card empty" style="margin-top: 24px;">
+    <h1 class="empty__title">{{ title or "Something went wrong" }}</h1>
+    <p class="empty__subtitle">{{ message or "Please go back and try again." }}</p>
+    <a class="btn btn--primary" href="{{ url_for('home') }}">Back home</a>
+  </section>
+{% endblock %}
