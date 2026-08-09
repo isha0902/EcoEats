@@ -25,7 +25,7 @@
               </div>
             </div>
             <div class="listingCard__price">
-              <div class="price">₹{{ l.price }}</div>
+              <div class="price">{{ l.price }}</div>
               <div class="muted">qty {{ l.quantity }}</div>
               {% set active_count = active_reservation_counts.get(l.id, 0) %}
               {% if active_count %}

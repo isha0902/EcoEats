@@ -1,5 +1,4 @@
 id,title,category,price,quantity,pickup_start,pickup_end,location,seller_name,seller_contact,status,created_at
-id,title,category,price,quantity,pickup_start,pickup_end,location,seller_name,seller_contact,status,created_at
 lst001,Mixed bakery box,Bakery,₹180,5,2026-08-10T09:00,2026-08-10T18:00,"Indiranagar, Bengaluru",Ananya Rao,ananya.rao@example.com,available,2026-08-09T08:00:00
 lst002,Surplus veggie bowls,Vegetables,₹140,8,2026-08-10T10:00,2026-08-10T20:00,"Andheri West, Mumbai",Rohan Mehta,rohan.mehta@example.com,available,2026-08-09T08:05:00
 lst003,Seasonal fruit bag,Fruits,₹90,10,2026-08-10T08:00,2026-08-10T17:00,"Lajpat Nagar, Delhi",Priya Nair,priya.nair@example.com,available,2026-08-09T08:10:00

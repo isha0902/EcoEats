@@ -9,6 +9,7 @@ from pathlib import Path
 
 from flask import Flask, abort, flash, redirect, render_template, request, session, url_for
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user
+from sqlalchemy.exc import OperationalError
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from db import Listing, Reservation, User, db
@@ -78,7 +79,10 @@ def create_app() -> Flask:
             return None
 
     with app.app_context():
-        db.create_all()
+        try:
+            db.create_all()
+        except OperationalError:
+            db.session.rollback()
         ensure_schema_upgrades()
         backfill_seeded_listing_ownership()
         seed_db_from_csv_if_empty()

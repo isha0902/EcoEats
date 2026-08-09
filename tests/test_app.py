@@ -1,5 +1,7 @@
+import csv
 import re
 from datetime import datetime, timedelta
+from pathlib import Path
 from uuid import uuid4
 
 import pytest
@@ -59,6 +61,16 @@ def test_health(client):
     rv = client.get("/health")
     assert rv.status_code == 200
     assert rv.json.get("ok") is True
+
+
+def test_seed_csv_duplicate_header_row_is_ignored(client):
+    csv_path = Path("data/food.csv")
+    with csv_path.open(newline="", encoding="utf-8") as fh:
+        rows = list(csv.DictReader(fh))
+
+    assert rows
+    assert all(row.get("id") for row in rows)
+    assert all(row.get("id") != "id" for row in rows)
 
 
 def test_signup_valid_and_duplicate(client):
@@ -365,7 +377,7 @@ def test_listings_pagination_preserves_filters(client):
 
 def test_seeded_listings_keep_owner_assignment(client):
     with client.application.app_context():
-        seeded_listing = Listing.query.filter_by(id="9c7d1a5b4e8b4f7a8b8d4c1e5f2e9d10").first()
+        seeded_listing = Listing.query.filter_by(id="lst001").first()
         assert seeded_listing is not None
         assert seeded_listing.seller_id is not None
         assert seeded_listing.seller is not None
