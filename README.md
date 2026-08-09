@@ -72,7 +72,7 @@ export DATABASE_URL="postgresql://user:pass@host:5432/dbname"
 ![Homepage](screenshots/Homepage.png)
 
 **Sign up — role-based accounts**
-![Sign up](screenshots/Signup.png)
+![Sign up](screenshots/signup.png)
 
 **Browsing listings**
 ![Browse listings](screenshots/Browsinglistings.png)
